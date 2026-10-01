@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevFix – coding errors, explained</title>
+<style>
+:root{--bg:#eef2ee;--panel:#fff;--ink:#14231b;--mute:#5d6b62;--line:#d3ddd5;--brand:#1f8a45;--hi:#ffe27a;--bad:#fdeaea;--badi:#8a1f1f;--good:#e6f5ea;--goodi:#145c2d;--code:#0f1a14;--codei:#d8efe0}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1511;--panel:#16201a;--ink:#e6f0e9;--mute:#93a69a;--line:#27382d;--brand:#4cc57a;--hi:#5b4a00;--bad:#2b1717;--badi:#ffb3b3;--good:#12281a;--goodi:#9be3b6;--code:#080d0a}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;min-height:100%}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+header{max-width:1100px;margin:0 auto;padding:28px 20px 8px}
+h1{margin:0;font-size:clamp(2rem,5vw,3.2rem);letter-spacing:-.03em;line-height:1.05}
+h1 span{background:linear-gradient(transparent 62%,var(--hi) 62%)}
+header p{margin:8px 0 0;color:var(--mute);max-width:60ch}
+main{max-width:1100px;margin:0 auto;padding:16px 20px 48px;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px}
+@media(max-width:820px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+label{font-weight:600;display:block;margin-bottom:6px}
+textarea,select{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea{min-height:170px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+.row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 14px}
+button.go{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;flex:1}
+button:hover{border-color:var(--brand)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
+.chips button{font-size:13px;padding:4px 10px;border-radius:99px;color:var(--mute)}
+.hint{color:var(--mute);font-size:13px;margin:10px 0 0}
+h2{font-size:1.05rem;margin:18px 0 6px}
+h2:first-child{margin-top:0}
+ul{margin:0;padding-left:20px}li{margin:3px 0}
+.badge{display:inline-block;font-size:13px;padding:2px 10px;border-radius:99px;background:var(--good);color:var(--goodi);margin-right:6px}
+.badge.warn{background:var(--hi);color:var(--ink)}
+.title{font-size:1.35rem;font-weight:700;margin:6px 0 4px;letter-spacing:-.01em}
+pre{margin:0;padding:12px 14px;border-radius:10px;overflow-x:auto;font:13.5px/1.5 ui-monospace,Menlo,Consolas,monospace}
+.b{background:var(--bad);color:var(--badi)}.g{background:var(--good);color:var(--goodi)}
+.cap{font-size:13px;color:var(--mute);margin:8px 0 3px}
+.empty{color:var(--mute);text-align:center;padding:44px 10px}
+.hist{margin-top:20px}.hist button{display:block;width:100%;text-align:left;margin-top:6px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--code);color:var(--codei);padding:8px 16px;border-radius:99px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+.meta{display:flex;justify-content:space-between;color:var(--mute);font-size:13px;margin:6px 0 0}
+.echo{background:var(--code);color:#ffb3b3;margin:0 0 12px;white-space:pre-wrap;word-break:break-word}
+.tldr{background:var(--good);color:var(--goodi);border-radius:10px;padding:10px 14px;margin:10px 0 4px}
+.sec{border-left:4px solid var(--c);padding:2px 0 2px 14px;margin:18px 0}
+.sec h2{margin:0 0 6px}.sec p{margin:0}
+.what{--c:#3b82f6}.why{--c:#e0a800}.fix{--c:var(--brand)}
+.mini{font-size:12px;padding:1px 9px;margin-left:8px;border-radius:99px}
+.big{font-size:1.2rem;font-weight:700;color:var(--ink)}
+.how{text-align:left;max-width:36ch;margin:14px auto 0}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(1turn)}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fresh>*{animation:rise .35s both}
+#out:focus{outline:none}
+@media(min-width:821px){#out{position:sticky;top:16px;align-self:start}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dev<span>Fix</span></h1>
+  <p>Paste an error, pick a language, and get what happened, why it happens, and how to fix it.</p>
+</header>
+<main>
+  <section class="card" aria-label="Input">
+    <label for="err">Error message or stack trace</label>
+    <textarea id="err" placeholder="TypeError: Cannot read properties of undefined (reading 'name')"></textarea>
+    <div class="meta"><span id="det">Language: auto-detect</span><span id="cnt"></span></div>
+    <div class="chips" id="chips" aria-label="Try an example"></div>
+    <label for="lang">Language</label>
+    <select id="lang">
+      <option value="auto">Auto-detect</option><option value="js">JavaScript</option><option value="py">Python</option>
+      <option value="java">Java</option><option value="cpp">C++</option><option value="other">Other</option>
+    </select>
+    <div class="row"><button class="go" id="go">Explain this error</button><button id="clr">Clear</button></div>
+    <p class="hint">Tip: Ctrl + Enter also runs it. Runs fully in your browser; nothing is sent anywhere.</p>
+    <div class="hist"><strong>Recent</strong><div id="hist"></div></div>
+  </section>
+  <section class="card" id="out" aria-live="polite" tabindex="-1"></section>
+</main>
+<div id="toast" role="status"></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LN={js:'JavaScript',py:'Python',java:'Java',cpp:'C++',other:'Other'};
+
+// Knowledge base: each rule matches an error pattern and carries a structured explanation.
+const RULES=[
+{l:['js'],re:/cannot read propert(?:y|ies) of (undefined|null)(?: \(reading '([^']+)'\))?/i,t:'Reading a property of $1',
+ what:'The code tried to read `$2` from a value that is $1, so the program stopped.',
+ why:['Data from an API or database has not arrived yet, or came back empty','A variable was never assigned, or a function returned nothing','A typo or wrong path, such as user.profile.name when profile is missing'],
+ fix:['Check the value exists before you use it','Use optional chaining (?.) and a default with ??','Log the object just before the failing line to see what it really holds'],
+ bad:"const name = user.profile.name;",good:"const name = user?.profile?.name ?? 'Guest';"},
+{l:['js'],re:/(\S+) is not a function/i,t:'$1 is not a function',
+ what:'You called `$1` like a function, but its value is not one.',
+ why:['The method name is misspelled or does not exist on that object','The variable was overwritten with a non-function','An import is missing or uses the wrong default/named form'],
+ fix:['Print typeof $1 to confirm what it is','Check spelling and the import style','Make sure the object is the type you expect (array vs object)'],
+ bad:"items.map(...)  // items is an object",good:"Array.isArray(items) && items.map(...)"},
+{l:['js','py'],re:/(?:ReferenceError: )?(?:name ')?(\w+)'? is not defined/i,t:'`$1` is not defined',
+ what:'The code uses the name `$1`, but nothing with that name exists in the current scope.',
+ why:['The variable is misspelled or declared in a different scope','Declaration or import is missing','The name is used before it is created'],
+ fix:['Declare or import `$1` before using it','Check spelling and letter case','Move the declaration into a scope that reaches this line'],
+ bad:"console.log(total);",good:"let total = 0;\nconsole.log(total);"},
+{l:['js','py'],re:/(?:Cannot find module|ModuleNotFoundError: No module named) ['"]?([\w@\/.\-]+)/i,t:'Missing module `$1`',
+ what:'The program tried to load `$1`, but it is not installed or the path is wrong.',
+ why:['The package was never installed in this project or environment','A relative path is wrong (./file vs ../file)','The wrong virtual environment or Node version is active'],
+ fix:['Install it: npm install $1  (or  pip install $1)','Check the import path and file extension','Confirm you are in the right environment'],
+ bad:"import foo from 'foo'",good:"// terminal\nnpm install foo"},
+{l:['py'],re:/IndexError: (.*)/i,t:'Index out of range',what:'You asked for a list position that does not exist.',
+ why:['The list is shorter than you assumed (maybe empty)','Off-by-one: valid indexes run 0 to len(list)-1','The list changed inside a loop'],
+ fix:['Check len(items) before indexing','Loop with for x in items instead of manual indexes','Print the list to see its real size'],
+ bad:"items = [1, 2, 3]\nprint(items[3])",good:"if len(items) > 3:\n    print(items[3])"},
+{l:['java'],re:/(?:Array)?IndexOutOfBoundsException:? ?(.*)/i,t:'Index out of bounds',what:'The code used an index outside the array or list size.',
+ why:['Loop runs to <= length instead of < length','The collection is empty or smaller than assumed','Index calculated from stale data'],
+ fix:['Loop with i < arr.length','Check size() before get(i)','Use an enhanced for loop when you do not need the index'],
+ bad:"for (int i = 0; i <= arr.length; i++)",good:"for (int i = 0; i < arr.length; i++)"},
+{l:['py'],re:/KeyError: (.+)/i,t:'Missing dictionary key $1',what:'The dictionary has no key $1.',
+ why:['The key is misspelled or has different letter case','The data does not contain it (e.g. optional JSON field)','Keys are stored as another type (int vs str)'],
+ fix:['Use d.get(key, default) for optional keys','Check with  if key in d','Print d.keys() to see what exists'],
+ bad:"user['email']",good:"user.get('email', 'not provided')"},
+{l:['py'],re:/(IndentationError|TabError)[: ]*(.*)/i,t:'Indentation problem',what:'Python found inconsistent or missing indentation.',
+ why:['Tabs and spaces are mixed','A block (if/for/def) has no indented body','A line is indented differently from its siblings'],
+ fix:['Use 4 spaces everywhere; convert tabs in your editor','Indent the body under every colon line','Turn on "show whitespace" to spot the odd line'],
+ bad:"def hi():\nprint('hi')",good:"def hi():\n    print('hi')"},
+{l:['py'],re:/TypeError: .*(can only concatenate|unsupported operand)/i,t:'Mixing incompatible types',what:'An operator was used on two types that cannot be combined, like text + number.',
+ why:['Input() returns text, not numbers','Data from a file or API is a string','A value is None where a number was expected'],
+ fix:['Convert explicitly: int(x), float(x), str(x)','Use f-strings for text: f"Total: {n}"','Print type(x) of both sides'],
+ bad:"'Age: ' + 21",good:"f'Age: {21}'"},
+{l:['py'],re:/ZeroDivisionError/i,t:'Division by zero',what:'Something was divided by zero.',
+ why:['A count or total is 0 (e.g. empty list average)','A variable was never updated'],
+ fix:['Guard: if b != 0','Return a default for empty input'],bad:"avg = total / len(nums)",good:"avg = total / len(nums) if nums else 0"},
+{l:['java'],re:/NullPointerException/i,t:'NullPointerException',what:'You used an object reference that is null.',
+ why:['The object was declared but never created with new','A method returned null (not found, empty result)','A field was not initialised in the constructor'],
+ fix:['Initialise the object before use','Check  if (obj != null)  or use Optional','Read the stack trace: the top line with your file name is the culprit'],
+ bad:"String s = null;\ns.length();",good:"String s = \"\";\nif (s != null) s.length();"},
+{l:['java','cpp'],re:/cannot find symbol|undefined reference to [`']?([\w:~]+)|was not declared in this scope/i,t:'Symbol not found',what:'The compiler or linker cannot find something you referred to.',
+ why:['Misspelled name, or wrong letter case','Missing import/#include or header','Function declared but its body is not compiled or linked'],
+ fix:['Check spelling and case','Add the import / #include','Make sure every .cpp file is part of the build (linker error)'],
+ bad:"cout << x;  // x never declared",good:"int x = 5;\ncout << x;"},
+{l:['cpp'],re:/segmentation fault|SIGSEGV|access violation/i,t:'Segmentation fault',what:'The program touched memory it is not allowed to use.',
+ why:['Dereferencing a null or dangling pointer','Array index out of range','Stack overflow from endless recursion'],
+ fix:['Initialise pointers; check for nullptr','Check array bounds','Compile with -g -fsanitize=address and re-run to see the exact line'],
+ bad:"int* p = nullptr;\n*p = 1;",good:"int x = 0;\nint* p = &x;\n*p = 1;"},
+{l:['js','py','java'],re:/Maximum call stack|RecursionError|StackOverflowError/i,t:'Recursion never stops',what:'A function kept calling itself until the call stack was full.',
+ why:['No base case, or the base case is never reached','The input does not move toward the base case'],
+ fix:['Add a base case that returns','Make sure each call gets a smaller problem','Switch to a loop for deep recursion'],
+ bad:"function f(n){ return f(n-1); }",good:"function f(n){ if(n<=0) return 0; return f(n-1); }"},
+{l:['js','py','java','cpp'],re:/SyntaxError|expected ['";)\]}]|unexpected token|error: expected/i,t:'Syntax error',what:'The code breaks the language grammar, so it cannot even start.',
+ why:['Missing or extra bracket, quote, comma or semicolon','A keyword is misspelled','Code pasted with curly quotes or stray characters'],
+ fix:['Go to the reported line, then check the line ABOVE it','Match every ( [ { with a closing partner','Use an editor with bracket highlighting'],
+ bad:"if (x > 1 {",good:"if (x > 1) {"}
+];
+const EX=[["TypeError: Cannot read properties of undefined (reading 'name')","js"],["IndexError: list index out of range","py"],["Exception in thread \"main\" java.lang.NullPointerException","java"],["Segmentation fault (core dumped)","cpp"]];
+
+function detect(t){
+  if(/Traceback|File ".*", line|\bpython/i.test(t)||/^\w*(Error|Exception): /m.test(t)&&/IndexError|KeyError|NameError|ModuleNotFound|Indentation|ZeroDivision/.test(t))return'py';
+  if(/Exception in thread|java\.|\.java:\d|NullPointer/.test(t))return'java';
+  if(/segmentation|undefined reference|\.cpp:\d|std::|not declared in this scope/i.test(t))return'cpp';
+  return'js';
+}
+function where(t){
+  const m=t.match(/([\w\-./\\]+\.(?:js|jsx|ts|tsx|py|java|cpp|c|h)):(\d+)(?::(\d+))?/)||t.match(/File "([^"]+)", line (\d+)/)||t.match(/\(([\w\-./\\]+\.java):(\d+)\)/);
+  return m?{f:m[1].split(/[\\/]/).pop(),n:m[2]}:null;
+}
+const sub=(s,m)=>s.replace(/\$(\d)/g,(_,i)=>m[i]||'the value');
+function analyze(t,l){
+  const lang=l==='auto'?detect(t):l;
+  for(const r of RULES){
+    if(!(r.l.includes(lang)||lang==='other'))continue;
+    const m=t.match(r.re);
+    if(m)return{r,m,lang,hit:true,loc:where(t)};
+  }
+  return{lang,hit:false,loc:where(t)};
+}
+const li=a=>'<ul>'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+let last='',cur='',o;
+function render(a){
+  const o=$('out'),loc=a.loc?`<span class="badge warn">Look at ${esc(a.loc.f)}, line ${esc(a.loc.n)}</span>`:'';
+  const head=`<pre class="echo">${esc(cur.split('\n')[0].slice(0,200))}</pre><span class="badge">${esc(LN[a.lang])}</span>${a.hit?`<span class="badge ${a.ai?'warn':''}">${a.ai?'AI-generated':'Rule-based'}</span>`:''}${loc}`;
+  if(!a.hit){
+    last='No exact match. Read the first line of the error, find the file and line in the trace, and search the exact message plus "'+LN[a.lang]+'".';
+    o.innerHTML=head+`<div class="title">No exact match, but here is how to attack it</div>
+    <h2>What to do</h2>${li(['Read the first line: it names the error type and the reason','Find the first line in the trace that points to YOUR file, since that is where to look','Add a print/log just before that line and check the values','Search the exact message together with "'+LN[a.lang]+'"'])}
+    <p class="hint">DevFix knows ${RULES.length} common error families so far. Try another phrasing of the message.</p>`;return;
+  }
+  const {r,m}=a,T=x=>esc(sub(x,m));
+  last=`DevFix report (${LN[a.lang]})\n${sub(r.t,m)}\n\nWhat happened: ${sub(r.what,m)}\nWhy: ${r.why.join('; ')}\nFix: ${r.fix.map(x=>sub(x,m)).join('; ')}`;
+  o.innerHTML=head+`<div class="title">${T(r.t)}</div>
+  <div class="tldr"><b>Quick fix:</b> ${T(r.fix[0])}</div>
+  <div class="sec what"><h2>What happened</h2><p>${T(r.what).replace(/`([^`]+)`/g,'<code>$1</code>')}</p></div>
+  <div class="sec why"><h2>Why it might happen</h2>${li(r.why)}</div>
+  <div class="sec fix"><h2>How to fix it</h2>${li(r.fix.map(x=>sub(x,m)))}
+  <div class="cap">Before</div><pre class="b">${esc(r.bad)}</pre>
+  <div class="cap">After <button class="mini" id="cc">Copy code</button></div><pre class="g">${esc(r.good)}</pre></div>
+  <div class="row"><button id="cp">Copy full explanation</button></div>`;
+  $('cp').onclick=copy;
+  $('cc').onclick=()=>navigator.clipboard&&navigator.clipboard.writeText(r.good).then(()=>toast('Code copied'),()=>toast('Copy failed'));
+}
+function copy(){navigator.clipboard&&navigator.clipboard.writeText(last).then(()=>toast('Copied'),()=>toast('Copy failed'))}
+function toast(s){const t=$('toast');t.textContent=s;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1400)}
+function run(){
+  const t=$('err').value.trim();
+  if(!t){$('out').innerHTML='<div class="empty">Paste an error message first.</div>';$('err').focus();return}
+  cur=t;live();
+  o=$('out');o.classList.remove('fresh');o.innerHTML='<div class="empty"><span class="spin"></span>Analyzing…</div>';
+  setTimeout(async()=>{
+    const a=analyze(t,$('lang').value);
+    if(!a.hit){ // Approach B fallback: ask the server (which calls the LLM). If it fails, the checklist still shows.
+      try{
+        const res=await fetch('/api/explain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({error:t,language:LN[a.lang]})});
+        if(res.ok){const d=await res.json(),arr=v=>Array.isArray(v)?v.map(String):[String(v||'')];
+          a.r={t:String(d.title||'Error explanation'),what:String(d.what||''),why:arr(d.why),fix:arr(d.fix),bad:String(d.bad||''),good:String(d.good||'')};
+          a.m=[];a.ai=true;a.hit=true}
+      }catch(e){}
+    }
+    render(a);save(t,$('lang').value);void o.offsetWidth;o.classList.add('fresh');
+    if(innerWidth<=820)o.scrollIntoView({behavior:'smooth',block:'start'});o.focus({preventScroll:true})},250);
+}
+const EMPTY='<div class="empty"><div class="big">Paste an error to get started</div><ol class="how"><li>Paste the error or stack trace</li><li>Pick the language, or let DevFix detect it</li><li>Read what happened, why, and how to fix it</li></ol></div>';
+function live(){const t=$('err').value.trim(),v=$('lang').value;
+  $('det').textContent=t?(v==='auto'?'Looks like '+LN[detect(t)]:'Language: '+(LN[v]||'Auto-detect')):'Language: auto-detect';
+  $('cnt').textContent=t?t.split('\n').length+(t.split('\n').length>1?' lines':' line'):''}
+$('err').addEventListener('input',live);$('lang').addEventListener('change',live);
+$('out').innerHTML=EMPTY;
+function hist(){try{return JSON.parse(localStorage.getItem('devfix')||'[]')}catch(e){return[]}}
+function save(t,l){try{const h=[[t,l],...hist().filter(x=>x[0]!==t)].slice(0,5);localStorage.setItem('devfix',JSON.stringify(h))}catch(e){}drawHist()}
+function drawHist(){
+  const h=hist();$('hist').innerHTML=h.length?'':'<p class="hint">Nothing yet.</p>';
+  h.forEach(([t,l])=>{const b=document.createElement('button');b.textContent=t.split('\n')[0];b.onclick=()=>{$('err').value=t;$('lang').value=l;run()};$('hist').appendChild(b)});
+}
+EX.forEach(([t,l])=>{const b=document.createElement('button');b.textContent=t.slice(0,28)+'…';b.onclick=()=>{$('err').value=t;$('lang').value=l;run()};$('chips').appendChild(b)});
+$('go').onclick=run;
+$('clr').onclick=()=>{$('err').value='';$('out').classList.remove('fresh');$('out').innerHTML=EMPTY;live();$('err').focus()};
+$('err').addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')run()});
+drawHist();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "devfix",
+  "version": "1.0.0",
+  "description": "Turn coding errors into understandable solutions (rules + AI fallback)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file=.env server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
