@@ -6,35 +6,71 @@ import path from "node:path";
 const app = express();
 app.use(express.json({ limit: "20kb" }));
 
-// Serve ONLY index.html (not the whole folder, so server.js and .env stay private)
+// Serve ONLY index.html
 app.get("/", (req, res) => res.sendFile(path.resolve("index.html")));
 
-const SYSTEM = `You explain coding errors to developers. Reply with ONLY valid JSON, no markdown, in this shape:
-{"title":"short title","what":"what happened, 1-2 sentences","why":["cause 1","cause 2","cause 3"],"fix":["step 1","step 2","step 3"],"bad":"short code that causes it","good":"short fixed code"}`;
+const SYSTEM_INSTRUCTION = `You explain coding errors to developers. Provide clear, concise explanations and direct fix steps.`;
 
 app.post("/api/explain", async (req, res) => {
   const { error, language } = req.body || {};
   if (!error || typeof error !== "string") return res.status(400).json({ error: "No error text" });
-  if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: "API key not set" });
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: "API key not set" });
 
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+    const r = await fetch(url, {
       method: "POST",
       headers: {
-        "content-type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-5-5",
-        max_tokens: 800,
-        system: SYSTEM,
-        messages: [{ role: "user", content: `Language: ${language || "unknown"}\nError:\n${error.slice(0, 4000)}` }],
+        system_instruction: {
+          parts: [{ text: SYSTEM_INSTRUCTION }],
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: `Language: ${language || "unknown"}\nError:\n${error.slice(0, 4000)}` }],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              title: { type: "STRING" },
+              what: { type: "STRING" },
+              why: { type: "ARRAY", items: { type: "STRING" } },
+              fix: { type: "ARRAY", items: { type: "STRING" } },
+              bad: { type: "STRING" },
+              good: { type: "STRING" }
+            },
+            required: ["title", "what", "why", "fix", "bad", "good"]
+          },
+          maxOutputTokens: 2048,
+        },
       }),
     });
+
+    if (!r.ok) {
+      const errBody = await r.text();
+      throw new Error(`Gemini API returned status ${r.status}: ${errBody}`);
+    }
+
     const data = await r.json();
-    const text = data.content?.[0]?.text ?? "";
-    res.json(JSON.parse(text.replace(/```json|```/g, "").trim()));
+    let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+    
+    // Clean any accidental markdown wrap
+    rawText = rawText.trim();
+    if (rawText.startsWith("```")) {
+      rawText = rawText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    }
+
+    const parsed = JSON.parse(rawText);
+    res.json(parsed);
   } catch (e) {
     console.error("AI error:", e.message);
     res.status(502).json({ error: "AI unavailable" });
